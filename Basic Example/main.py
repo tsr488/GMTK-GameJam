@@ -1,19 +1,19 @@
 import math
 import os
-import sys
 import pygame
+import sys
 from Graphics.GameWindow import GameWindow
 from Graphics.Sprite import Sprite
 
 pygame.init()
 
 # CREATE THE GAME WINDOW.
-game_window = GameWindow(640, 480)
+game_window = GameWindow(800, 600)
 
 # CREATE THE PLAYER.
 player = Sprite("Images/Player.bmp", 10, 10)
 
-print (player.Image)
+print(player.Image)
 
 # ADD THE PLAYER TO THE SET OF OBJECTS DRAWN ON SCREEN.
 game_window.AddSprite(player)
