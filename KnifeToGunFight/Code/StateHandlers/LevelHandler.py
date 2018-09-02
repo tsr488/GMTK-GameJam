@@ -76,8 +76,8 @@ class LevelHandler(StateHandler):
             collided_with_teleporter, player_alive = self.HandlePlayerInteraction(teleporter_activated)
             
             # Check if the player is still alive.
-            # If not, return to Level 1.
             if not player_alive:
+                # The player died, so restart the current level.
                 return LevelHandler(self.GameWindow, self.LevelFilepath)
             
             # Check if we should move to the next level.
@@ -186,7 +186,7 @@ class LevelHandler(StateHandler):
                 # REMOVE THE LASER FROM THE MAP.
                 self.Map.Lasers.remove(laser)
 
-                # RESET TO LEVEL ONE ON PLAYER DEATH.
+                # INDICATE THAT THE PLAYER DIED.
                 collided_with_teleporter = False
                 player_alive = False
                 return (collided_with_teleporter, player_alive)
@@ -208,21 +208,20 @@ class LevelHandler(StateHandler):
         enemies = self.Map.GetEnemies()
         for enemy in enemies:
             # CHECK IF THE ENEMY WAS HIT BY A REFLECTED LASER.
-            for laser in self.Map.Lasers:
-                if laser.HasBeenReflected:
-                    # Check collision.
-                    enemy_was_hit_by_laser = enemy.Coordinates.colliderect(laser.Coordinates)
-                    if enemy_was_hit_by_laser:
-                        # Remove this enemy from the map.
-                        self.Map.RemoveObject(enemy)
-                        
-                        # No further updates are necessary for this enemy.
-                        continue
+            lasers_that_kill_enemy = [laser for laser in self.Map.Lasers
+                if laser.HasBeenReflected and enemy.Coordinates.colliderect(laser.Coordinates)]
+            enemy_was_hit_by_laser = (len(lasers_that_kill_enemy) > 0)
+            if enemy_was_hit_by_laser:
+                # Remove this enemy from the map.
+                self.Map.RemoveObject(enemy)
+                
+                # No further updates are necessary for this enemy.
+                continue
 
             # TARGET THE PLAYER.
             enemy.TargetPlayer(player)
                         
-            # RANDOMLY SHOOT AT THE PLAYER.
+            # TRY TO SHOOT AT THE PLAYER.
             laser = enemy.TryShooting(time_since_last_update_in_seconds, player, self.Map)
             if laser:
                 self.Map.Lasers.append(laser)
@@ -261,7 +260,7 @@ class LevelHandler(StateHandler):
                 next_grid_position_center_x = (next_grid_position_in_path_to_player.X + 0.5) * GameObject.WidthPixels
                 next_grid_position_center_y = (next_grid_position_in_path_to_player.Y + 0.5) * GameObject.HeightPixels
                 directions_to_move = LevelHandler.GetDirectionTowardPosition(
-                    Vector2(enemy.Coordinates.center[0], enemy.Coordinates.center[1]),
+                    Vector2(enemy.Coordinates.centerx, enemy.Coordinates.centery),
                     Vector2(next_grid_position_center_x, next_grid_position_center_y))
 
             # MOVE.
