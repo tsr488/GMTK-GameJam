@@ -159,10 +159,6 @@ class LevelHandler(StateHandler):
                     sys.exit()
                     pygame.quit()
             elif event.type is pygame.MOUSEBUTTONDOWN:
-                ## \todo    Do we want space to trigger swinging sword or something else?
-                # Sword swinging is currently handled here (with keyboard events, rather
-                # then just checking currently pressed keys) in order to have sword swinging
-                # only triggered on new key presses, not be trigger when keys are held down.
                 # SWING THE PLAYER'S SWORD.
                 player.SwingSword()
         
@@ -246,7 +242,7 @@ class LevelHandler(StateHandler):
             within_desired_distance_of_player = (distance_to_player < DESIRED_DISTANCE)
             if too_close_to_player:
                 # BACK AWAY FROM THE PLAYER.
-                direction_to_move = LevelHandler.GetDirectionTowardPosition(player_position_vector, enemy_position_vector)
+                directions_to_move = LevelHandler.GetDirectionTowardPosition(player_position_vector, enemy_position_vector)
                 pass
             elif within_desired_distance_of_player:
                 # DON'T MOVE.
@@ -259,42 +255,46 @@ class LevelHandler(StateHandler):
                     # This enemy cannot currently reach the player.
                     continue
 
-                # Get the next grid position that the enemy should move to in
-                # order to reach the player.
+                # Get the cardinal direction in which the enemy should move in order to reach
+                # the player (or directions, if the true direction is diagonal).
                 next_grid_position_in_path_to_player = next(islice(path_to_player, 1, None), None)
-                direction_to_move = LevelHandler.GetDirectionTowardPosition(
-                    enemy_position_vector,
-                    next_grid_position_in_path_to_player)
+                next_grid_position_center_x = (next_grid_position_in_path_to_player.X + 0.5) * GameObject.WidthPixels
+                next_grid_position_center_y = (next_grid_position_in_path_to_player.Y + 0.5) * GameObject.HeightPixels
+                directions_to_move = LevelHandler.GetDirectionTowardPosition(
+                    Vector2(enemy.Coordinates.center[0], enemy.Coordinates.center[1]),
+                    Vector2(next_grid_position_center_x, next_grid_position_center_y))
 
             # MOVE.
-            if direction_to_move is None:
-                continue
-            elif direction_to_move == MoveDirection.Up:
-                enemy.MoveUp(self.Map)
-            elif direction_to_move == MoveDirection.Down:
-                enemy.MoveDown(self.Map)
-            elif direction_to_move == MoveDirection.Left:
-                enemy.MoveLeft(self.Map)
-            elif direction_to_move == MoveDirection.Right:
-                enemy.MoveRight(self.Map)
+            # If the true direction is diagonal, one of the directions to move may be blocked
+            # by an obstacle, but trying to move in the other direction should succeed.
+            for direction in directions_to_move:
+                if direction == MoveDirection.Up:
+                    enemy.MoveUp(self.Map)
+                elif direction == MoveDirection.Down:
+                    enemy.MoveDown(self.Map)
+                elif direction == MoveDirection.Left:
+                    enemy.MoveLeft(self.Map)
+                elif direction == MoveDirection.Right:
+                    enemy.MoveRight(self.Map)
 
-    ## Gets the direction (up, down, left, or right) from one position to another.
+    ## Gets the directions (up, down, left, or right) from one position to another.
     ## \param[in]  origin_position - The first position as a Vector2 of column and row index.
     ## \param[in]  target_position - The target position as a Vector2 of column and row index.
+    ## \returns The direction (or directions if relationship is diagonal) from origin to target,
+    ##      or an empty list if origin and target are the same position.
     ## \author  Tom Rogan
     ## \date    09/01/2018
     @staticmethod
     def GetDirectionTowardPosition(origin_position, target_position):
+        directions = []
         if target_position is None:
-            return None
-        elif origin_position.Y > target_position.Y:
-            return MoveDirection.Up
-        elif origin_position.Y < target_position.Y:
-            return MoveDirection.Down
-        elif origin_position.X > target_position.X:
-            return MoveDirection.Left
-        elif origin_position.X < target_position.X:
-            return MoveDirection.Right
-        else:
-            # Origin and target positions are the same.
-            return None
+            return directions
+        if origin_position.Y > target_position.Y:
+            directions.append(MoveDirection.Up)
+        if origin_position.Y < target_position.Y:
+            directions.append(MoveDirection.Down)
+        if origin_position.X > target_position.X:
+            directions.append(MoveDirection.Left)
+        if origin_position.X < target_position.X:
+            directions.append(MoveDirection.Right)
+        return directions

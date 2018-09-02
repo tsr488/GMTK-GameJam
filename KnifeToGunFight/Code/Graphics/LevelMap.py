@@ -150,7 +150,7 @@ class LevelMap(object):
         self.RemoveObject(game_object)
 
         # GET THE NEW GRID POSITION.
-        new_grid_position = self.GetGridPosition(game_object.TopLeftCornerPosition)
+        new_grid_position = self.GetGridPosition(game_object.Coordinates.center)
         
         # UPDATE THE POSITION.
         self.Map[new_grid_position] = game_object
